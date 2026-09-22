@@ -11,6 +11,10 @@ import { findSafeSpawn } from '../physics/PlayerCollision';
 import { DEFAULT_PLAYER_COLLIDER } from '../player/PlayerState';
 import { PlayerController } from '../player/PlayerController';
 import { createControlsOverlay } from '../ui/ControlsOverlay';
+import { HotbarView } from '../ui/HotbarView';
+import { BlockInteraction } from '../gameplay/BlockInteraction';
+import { WorldMutationStore } from '../world/MutationBatch';
+import { DEFAULT_BLOCKS, DEFAULT_BLOCK_DEFINITIONS, BLOCK_ID } from '../world/defaultBlocks';
 
 export class GameApplication {
   readonly renderer: Renderer;
@@ -23,6 +27,10 @@ export class GameApplication {
   private readonly previewChunk: ChunkView;
   private readonly player: PlayerController;
   private readonly controls: HTMLElement;
+  private readonly hotbar: HotbarView;
+  private readonly worldStore: WorldMutationStore;
+  private readonly interaction: BlockInteraction;
+  private readonly chunkSnapshot: ReturnType<typeof createDemoWorld>;
   private sessionStarted = false;
   private disposed = false;
 
@@ -51,8 +59,8 @@ export class GameApplication {
     const sun = new THREE.DirectionalLight('#fff0cb', 2.4);
     sun.position.set(-18, 32, 12);
     this.renderer.scene.add(sun);
-    const chunkSnapshot = createDemoWorld();
-    const collisionWorld = createDemoCollisionWorld(chunkSnapshot);
+    this.chunkSnapshot = createDemoWorld();
+    const collisionWorld = createDemoCollisionWorld(this.chunkSnapshot);
     this.renderer.camera.lookAt(8, 5, 8);
     const spawn = findSafeSpawn(8, 14, 32, DEFAULT_PLAYER_COLLIDER, collisionWorld);
     this.player = new PlayerController(
@@ -63,7 +71,7 @@ export class GameApplication {
         position: spawn,
         velocity: { x: 0, y: 0, z: 0 },
         yaw: 0,
-        pitch: 0,
+        pitch: -0.25,
         grounded: false,
         crouching: false,
         jumpWasDown: false,
@@ -71,7 +79,29 @@ export class GameApplication {
       this.pauseGame,
       new OriginManager(4),
     );
-    const chunk = meshChunk(chunkSnapshot, this.atlas.manifest);
+    this.worldStore = new WorldMutationStore(
+      this.chunkSnapshot.coord,
+      this.chunkSnapshot.blocks,
+      DEFAULT_BLOCK_DEFINITIONS.map((block) => ({ id: block.id, placeable: block.id !== 0 })),
+      new Map([
+        [BLOCK_ID['dirt'] ?? 0, 32],
+        [BLOCK_ID['stone'] ?? 0, 16],
+        [BLOCK_ID['oak_planks'] ?? 0, 16],
+        [BLOCK_ID['cobblestone'] ?? 0, 16],
+        [BLOCK_ID['glass'] ?? 0, 8],
+        [BLOCK_ID['torch'] ?? 0, 8],
+        [BLOCK_ID['oak_log'] ?? 0, 8],
+        [BLOCK_ID['sand'] ?? 0, 16],
+        [BLOCK_ID['oak_leaves'] ?? 0, 16],
+      ]),
+    );
+    this.interaction = new BlockInteraction(this.worldStore, DEFAULT_BLOCKS, () =>
+      this.player.getState(),
+    );
+    this.hotbar = new HotbarView(this.worldStore, () => undefined);
+    this.renderer.canvas.addEventListener('mousedown', this.onBlockAction);
+    this.renderer.canvas.addEventListener('contextmenu', this.onContextMenu);
+    const chunk = meshChunk(this.chunkSnapshot, this.atlas.manifest);
     for (const layer of ['opaque', 'cutout', 'translucent'] as const)
       this.previewChunk.update(layer, chunk[layer]);
     this.renderer.render();
@@ -105,7 +135,7 @@ export class GameApplication {
     this.controls = createControlsOverlay();
 
     panel.append(eyebrow, title, description, this.enterButton, this.status);
-    this.shell.append(viewport, panel, this.controls);
+    this.shell.append(viewport, panel, this.controls, this.hotbar.element);
     this.root.replaceChildren(this.shell);
 
     this.loop = new FixedStepLoop((dt) => {
@@ -139,6 +169,9 @@ export class GameApplication {
     this.renderer.canvas.removeEventListener('webglcontextlost', this.onContextLost);
     this.renderer.canvas.removeEventListener('webglcontextrestored', this.onContextRestored);
     this.enterButton.removeEventListener('click', this.enterWorld);
+    this.renderer.canvas.removeEventListener('mousedown', this.onBlockAction);
+    this.renderer.canvas.removeEventListener('contextmenu', this.onContextMenu);
+    this.hotbar.dispose();
     this.player.dispose();
     this.previewChunk.dispose();
     for (const material of Object.values(this.materials)) material.dispose();
@@ -150,17 +183,20 @@ export class GameApplication {
   private readonly enterWorld = (): void => {
     try {
       this.sessionStarted = true;
+      this.hotbar.setEnabled(true);
       this.renderer.canvas.focus();
       const request = this.renderer.canvas.requestPointerLock();
       if (request instanceof Promise) {
         void request.catch(() => {
           this.player.activateFallbackControls();
+          this.hotbar.setEnabled(true);
           this.resume();
           this.status.textContent = 'Keyboard mode active. WASD moves; click and drag to look.';
         });
       }
     } catch {
       this.player.activateFallbackControls();
+      this.hotbar.setEnabled(true);
       this.resume();
       this.status.textContent = 'Keyboard mode active. WASD moves; click and drag to look.';
     }
@@ -177,6 +213,7 @@ export class GameApplication {
       this.status.textContent = 'Mouse captured. WASD to move, mouse to look.';
       this.resume();
     } else if (this.sessionStarted && !document.hidden && !this.disposed) {
+      this.hotbar.setEnabled(false);
       this.pauseGame();
     }
   };
@@ -184,6 +221,7 @@ export class GameApplication {
   private readonly pauseGame = (): void => {
     if (this.disposed) return;
     this.player.deactivateControls();
+    this.hotbar.setEnabled(false);
     this.pause();
     this.enterButton.textContent = 'Resume world';
     this.status.textContent = 'Paused. Select Resume world to continue.';
@@ -198,6 +236,27 @@ export class GameApplication {
     this.lastStatusCell = cell;
     if (this.sessionStarted) this.status.textContent = `Exploring · ${cell}`;
   }
+
+  private readonly onBlockAction = (event: MouseEvent): void => {
+    if (!this.sessionStarted || !this.player) return;
+    if (event.button !== 0 && event.button !== 2) return;
+    event.preventDefault();
+    const result = this.interaction.interact(
+      event.button === 0 ? 'break' : 'place',
+      this.hotbar.selectedBlockId,
+    );
+    if (!result.changed) return;
+    const updated = meshChunk(
+      { ...this.chunkSnapshot, revision: this.worldStore.revision },
+      this.atlas.manifest,
+    );
+    for (const layer of ['opaque', 'cutout', 'translucent'] as const)
+      this.previewChunk.update(layer, updated[layer]);
+    this.hotbar.refresh();
+    this.status.textContent = event.button === 0 ? 'Block collected.' : 'Block placed.';
+  };
+
+  private readonly onContextMenu = (event: MouseEvent): void => event.preventDefault();
 
   private readonly onContextLost = (event: Event): void => {
     event.preventDefault();

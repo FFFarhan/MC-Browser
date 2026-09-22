@@ -38,6 +38,8 @@ export function createDemoWorld(): ChunkMeshSnapshot {
       }
   blocks[index(3, 4, 5)] = BLOCK_ID['tall_grass'] ?? 0;
   blocks[index(4, 4, 5)] = BLOCK_ID['tall_grass'] ?? 0;
+  // A close stone block gives the first session a clear mining/building target.
+  blocks[index(8, 4, 11)] = BLOCK_ID['stone'] ?? 0;
   return {
     coord: { x: 0, z: 0 },
     blocks,

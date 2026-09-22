@@ -36,3 +36,17 @@ test('first-person movement updates coordinates and Escape pauses before resume'
   await expect(status).toContainText('Exploring');
   expect(pageErrors).toEqual([]);
 });
+
+test('can place and break a block while inventory counts update', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Enter world' }).click();
+  const canvas = page.getByTestId('game-canvas');
+  const dirtSlot = page.getByRole('button', { name: /^1: Dirt/ });
+  await expect(dirtSlot).toContainText('32');
+  const stoneSlot = page.getByRole('button', { name: /^2: Stone/ });
+  await expect(stoneSlot).toContainText('16');
+  await canvas.click({ button: 'left' });
+  await expect(stoneSlot).toContainText('17');
+  await canvas.click({ button: 'right' });
+  await expect(dirtSlot).toContainText('31');
+});

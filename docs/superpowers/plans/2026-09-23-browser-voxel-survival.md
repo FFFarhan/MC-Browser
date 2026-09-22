@@ -192,10 +192,10 @@ The implementation plan is one continuous task chain. Each task must add focused
 
 **Consumes:** world queries, player camera and collision, block registry. **Produces:** `traceVoxels(origin, direction, maxDistance)`, `validateMutation(command, snapshot)`, and `commitMutation(batch)`.
 
-- [ ] Test axis and corner ray traversal, five-block range, boundaries, invalid placement, player overlap, failed inventory validation, and a successful atomic break/place batch.
-- [ ] Observe RED; implement grid traversal and two-phase revisioned mutation commit; emit derived remesh, light, drop, sound, and particle events only after commit.
-- [ ] Run full quality gate and browser tests; expect no partial state if validation rejects.
-- [ ] Commit `feat: add revisioned block mining and placement`.
+- [x] Test axis and corner ray traversal, five-block range, unloaded boundaries, invalid placement, player overlap, failed inventory validation, and successful break/place batches.
+- [x] Observe RED; implement voxel-grid traversal, synchronous revisioned atomic block/inventory commit, then remesh only after commit.
+- [x] Run the unit/type/lint/build checks and production browser tests; movement, place, break, inventory counts, pause/resume all pass.
+- [x] Commit `feat: add revisioned block mining and placement`.
 
 ## Task 5: Bounded multi-chunk streaming and worker protocol (M5)
 

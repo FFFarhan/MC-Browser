@@ -154,6 +154,39 @@ button {
 .controls-overlay span {
   color: #c4cebd;
 }
+.hotbar {
+  position: absolute;
+  z-index: 2;
+  bottom: 24px;
+  left: 50%;
+  display: flex;
+  max-width: min(92vw, 790px);
+  gap: 5px;
+  transform: translateX(-50%);
+}
+.hotbar-slot {
+  display: grid;
+  min-width: 70px;
+  min-height: 48px;
+  place-items: center;
+  padding: 6px;
+  border: 1px solid rgb(229 233 214 / 32%);
+  border-radius: 3px;
+  background: rgb(25 38 31 / 82%);
+  color: #e8eddf;
+  font-size: 0.65rem;
+  cursor: pointer;
+}
+.hotbar-slot[aria-pressed='true'] {
+  border-color: #f0dfa7;
+  outline: 2px solid #f0dfa7;
+  outline-offset: 1px;
+  background: rgb(67 75 55 / 94%);
+}
+.hotbar-slot:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
 .recovery-card {
   max-width: 640px;
   margin: min(12vh, 120px) auto;
@@ -185,6 +218,17 @@ button {
     min-width: 138px;
     gap: 6px;
     padding: 10px 12px;
+  }
+  .hotbar {
+    bottom: 154px;
+    gap: 3px;
+  }
+  .hotbar-slot {
+    min-width: 0;
+    min-height: 42px;
+    flex: 1;
+    padding: 4px 3px;
+    font-size: 0.56rem;
   }
 }
 
