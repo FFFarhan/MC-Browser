@@ -157,11 +157,11 @@ The implementation plan is one continuous task chain. Each task must add focused
 
 **Consumes:** Task 0 application shell and test scripts. **Produces:** `worldToChunk`, `worldBlockIndex`, `chunkKey`, `BlockRegistry.get(id)`, `ChunkData.get/set`, `WorldStore.getBlock/setGeneratedChunk`, and `OriginManager.rebaseIfNeeded(playerChunk)`.
 
-- [ ] Write tests for `x/z = -17,-16,-1,0,15,16,17`, exact index bounds, invalid IDs, serialization round trip, and an origin rebase preserving absolute coordinates.
-- [ ] Run the focused test command and observe expected RED.
-- [ ] Implement collision-free chunk keys, floor-based conversion, flat `Uint16Array` storage, registry validation, and chunk/local origin transforms.
-- [ ] Run unit suite, typecheck, lint, build, and E2E smoke; expect all pass.
-- [ ] Commit `feat: add voxel data model and coordinate safety`.
+- [x] Write tests for `x/z = -17,-16,-1,0,15,16,17`, exact index bounds, invalid IDs, serialization round trip, and an origin rebase preserving absolute coordinates.
+- [x] Run the focused test command and observe expected RED.
+- [x] Implement collision-free chunk keys, floor-based conversion, flat `Uint16Array` storage, registry validation, and chunk/local origin transforms.
+- [x] Run unit suite, typecheck, lint, build, and E2E smoke; all pass.
+- [x] Commit `feat: add voxel data model and coordinate safety`.
 
 ## Task 2: Procedural atlas and reference chunk mesher (M2)
 
