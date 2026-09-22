@@ -43,6 +43,8 @@ This is one autonomous run, but it is not one undifferentiated coding task.
 
 Do not silently omit, weaken, or reinterpret acceptance criteria. If a requirement cannot be completed, leave the last working version intact and report the exact blocker, evidence, attempted remedies, and unfinished criteria.
 
+The production invariants in `docs/ARCHITECTURE.md` override convenience. Do not accept a feature that works only on the happy path: exercise stale asynchronous results, queue saturation, subsystem failure, chunk boundaries, negative coordinates, save interruption, and resource cleanup at the milestone that introduces the relevant system.
+
 ## Quality gate
 
 Once M0 establishes the scripts, every milestone must pass:

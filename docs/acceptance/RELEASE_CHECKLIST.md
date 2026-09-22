@@ -9,6 +9,8 @@
 - [ ] `npm run build` passes.
 - [ ] `npm run test:e2e` passes.
 - [ ] Performance benchmarks are recorded and within approved budgets.
+- [ ] The 20-minute streaming soak reaches stable chunk, heap, and GPU-resource counts.
+- [ ] Fault-injection tests for workers, storage, WebGL, audio, and service-worker installation pass.
 
 ## Complete play journey
 
@@ -29,6 +31,7 @@
 - [ ] Change and persist controls, video, accessibility, and audio settings.
 - [ ] Save, refresh, and verify player, inventory, time, and mutations.
 - [ ] Travel far enough to unload the starting chunks, then return and verify edits.
+- [ ] Trigger a floating-origin rebase in a deterministic test world without camera, collision, particle, or audio discontinuity.
 - [ ] Export a world, import it under a new name, and verify equivalent state.
 - [ ] Reject an invalid import without damaging existing worlds.
 
@@ -42,10 +45,14 @@
 - [ ] Installing a newer production build replaces its static asset cache without touching saved worlds.
 - [ ] WebGL context loss and restoration do not corrupt the save.
 - [ ] Audio denial or failure does not prevent play.
+- [ ] Worker crash and queue overload recover without freezing or accepting stale terrain.
+- [ ] Storage quota failure preserves the last committed world and offers diagnostic export.
 
 ## Legal and product checks
 
 - [ ] No copied Minecraft code, textures, audio, branding, names, or UI artwork exists.
 - [ ] Third-party dependencies have compatible licenses and notices.
+- [ ] The committed lockfile reproduces the release from a clean install.
+- [ ] The production bundle contains no test-only hooks or public source maps.
 - [ ] Controls, save limitations, browser requirements, and known limitations are documented.
 - [ ] Every required release feature is implemented rather than represented by a placeholder.

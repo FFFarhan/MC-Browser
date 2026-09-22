@@ -4,15 +4,15 @@ Every milestone ends with a runnable application, focused acceptance tests, the 
 
 ## M0 — Foundation
 
-Create the Vite TypeScript application, Three.js canvas, lifecycle shell, fixed-step loop, error screen, formatting, linting, Vitest, Playwright, build scripts, and CI-compatible commands. Display an empty procedural sky and acquire/release pointer lock safely.
+Create the Vite TypeScript application, Three.js canvas, lifecycle shell, fixed-step loop, central error boundary, structured result and error types, platform capability detection, formatting, linting, Vitest, Playwright, build scripts, and CI-compatible commands. Define stable worker-message and persistence version primitives. Display an empty procedural sky and acquire/release pointer lock safely.
 
-**Gate:** all six quality commands succeed; the production bundle loads from a static server; startup failure shows a readable error.
+**Gate:** all six quality commands succeed; the production bundle loads from a static server; unsupported capabilities and injected startup failures show readable recovery screens; production contains no test hooks.
 
 ## M1 — Voxel model
 
-Implement block and item registries, coordinate math, chunk storage, block access, serialization primitives, and mutation overlays.
+Implement block and item registries, coordinate math, collision-free chunk keys, chunk storage, block access, serialization primitives, mutation overlays, revision counters, and floating-origin conversion utilities.
 
-**Gate:** round-trip and boundary tests pass, including all required negative coordinates; storage uses typed arrays; invalid IDs and Y coordinates are safe.
+**Gate:** round-trip, safe-range, rebase, and boundary tests pass, including all required negative coordinates; storage uses typed arrays; invalid IDs, non-finite values, and Y coordinates are safe.
 
 ## M2 — Atlas and one rendered chunk
 
@@ -28,15 +28,15 @@ Add camera control, fixed-step movement, gravity, jump, sprint, crouch, AABB col
 
 ## M4 — Block interaction
 
-Add voxel ray traversal, selection outline, mining progress, hardness and tool rules, placement, particles, item drops, and boundary remeshing.
+Add voxel ray traversal, selection outline, mining progress, hardness and tool rules, two-phase mutation batches, placement, particles, item drops, and boundary remeshing.
 
-**Gate:** edits work across chunk boundaries, placement is atomic and cannot overlap the player, and mining drops follow registry rules.
+**Gate:** edits work across chunk boundaries, block and inventory actions are atomic and revisioned, placement cannot overlap the player, derived-work failure is recoverable, and mining drops follow registry rules.
 
 ## M5 — Multi-chunk streaming
 
-Implement desired-set calculation, lifecycle states, priority queues, load/unload behavior, neighbor snapshots, stale-result rejection, and bounded scheduling using deterministic synthetic test chunks.
+Implement desired-set calculation, independent residency flags, lifecycle states, capacity-limited priority queues, load and unload behavior, eviction pinning, immutable neighbor halos, versioned worker messages, stale-result rejection, fault recovery, and bounded scheduling using deterministic synthetic test chunks.
 
-**Gate:** continuous traversal loads ahead and unloads behind; teleportation cannot attach obsolete meshes; memory returns near baseline after a round trip.
+**Gate:** continuous traversal loads ahead and unloads behind; teleportation cannot attach obsolete meshes; crash, timeout, and saturation tests degrade safely; memory and GPU-resource counts return near baseline after a round trip.
 
 ## M6 — Worker world generation
 
@@ -76,9 +76,9 @@ Add water render frames, swimming, finite level-based downward and horizontal sp
 
 ## M12 — Persistence
 
-Create the IndexedDB schema, world repository, mutation storage, player and inventory saves, autosave, migrations, export/import, corruption recovery, and transactional writes.
+Create the IndexedDB schema, immutable save generations, atomic manifest pointer, checksums, world repository, mutation storage, player and inventory saves, coalesced autosave, quota handling, migrations, bounded export and import, corruption recovery, and transactional writes.
 
-**Gate:** refresh restores the complete state; unmodified terrain regenerates; interrupted and corrupt inputs retain the last valid save; import limits are enforced.
+**Gate:** refresh restores the complete state; unmodified terrain regenerates; interruption at every commit phase retains the last valid save; mutation during encoding stays dirty; corrupt and oversized imports are rejected before world creation; quota failure offers export and recovery.
 
 ## M13 — Menus, audio, and accessibility
 
@@ -88,9 +88,9 @@ Complete world management, pause and settings menus, rebinding, procedural audio
 
 ## M14 — Performance and release
 
-Add diagnostics, benchmarks, queue tuning, object reuse, a versioned service worker and production asset cache, cross-browser fixes, documentation, release build, and final acceptance testing. The service worker must update atomically, discard obsolete caches after activation, and never cache imported world data or IndexedDB contents.
+Add the bounded local diagnostic ring, diagnostic export, long-frame metrics, benchmarks, queue tuning, measured object reuse, origin-rebase soak testing, a versioned service worker and production asset cache, cross-browser fixes, clean-install build verification, dependency-license review, documentation, release build, and final acceptance testing. The service worker must update atomically, discard obsolete caches after activation, and never cache imported world data or IndexedDB contents.
 
-**Gate:** performance targets are measured, the full release checklist passes, static hosting works, and no required feature is a placeholder.
+**Gate:** performance targets and the 20-minute soak are measured, queue and resource counts stabilize, injected subsystem failures recover safely, the full release checklist passes, static hosting and offline upgrade work, and no required feature is a placeholder.
 
 ## Deferred roadmap
 
