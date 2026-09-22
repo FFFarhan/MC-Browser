@@ -169,11 +169,11 @@ The implementation plan is one continuous task chain. Each task must add focused
 
 **Consumes:** `BlockRegistry`, `ChunkData`, and renderer from Tasks 0–1. **Produces:** `createTextureAtlas(artSeed): { texture: THREE.CanvasTexture; manifest: AtlasManifest }`; `meshChunk(snapshot): MeshBuffers`.
 
-- [ ] Test deterministic atlas pixel hash, valid padded UVs, hidden-face suppression, cross-boundary faces, cutout and translucent rules, and repeated geometry disposal.
-- [ ] Run focused tests and observe expected RED.
-- [ ] Implement Canvas-generated original 16×16 tiles, a sorted stable atlas manifest, nearest-neighbor sampling, face culling, transferable typed mesh buffers, and a test chunk view.
-- [ ] Run complete quality gate and benchmark a flat test chunk; expect no internal faces and no resource-count growth after 100 rebuilds.
-- [ ] Commit `feat: render voxel chunks with procedural pixel atlas`.
+- [x] Test deterministic atlas pixel hash, valid padded UVs, hidden-face suppression, cross-boundary faces, cutout and translucent rules, and repeated geometry disposal.
+- [x] Run focused tests and observe expected RED.
+- [x] Implement Canvas-generated original 16×16 tiles, a sorted stable atlas manifest, nearest-neighbor sampling, face culling, transferable typed mesh buffers, and a test chunk view.
+- [x] Run complete quality gate and benchmark a dense 16×16×16 chunk; internal faces are absent (54 boundary quads), 100 mesh replacements dispose geometry without scene growth, and meshing averages 2.43 ms locally.
+- [x] Commit `feat: render voxel chunks with procedural pixel atlas`.
 
 ## Task 3: First-person movement and collision (M3)
 

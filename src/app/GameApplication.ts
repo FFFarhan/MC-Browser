@@ -1,5 +1,11 @@
+import * as THREE from 'three';
 import { FixedStepLoop } from '../engine/FixedStepLoop';
+import { meshChunk } from '../meshing/faceMesher';
+import type { MeshLayer } from '../meshing/mesh-types';
+import { ChunkView } from '../rendering/ChunkView';
 import { Renderer } from '../rendering/Renderer';
+import { createTextureAtlas } from '../rendering/TextureAtlas';
+import { createDemoWorld } from '../world/demoWorld';
 
 export class GameApplication {
   readonly renderer: Renderer;
@@ -7,6 +13,9 @@ export class GameApplication {
   private readonly shell: HTMLElement;
   private readonly status: HTMLElement;
   private readonly enterButton: HTMLButtonElement;
+  private readonly atlas: ReturnType<typeof createTextureAtlas>;
+  private readonly materials: Record<MeshLayer, THREE.Material>;
+  private readonly previewChunk: ChunkView;
   private disposed = false;
 
   constructor(private readonly root: HTMLElement) {
@@ -17,6 +26,29 @@ export class GameApplication {
     const viewport = document.createElement('div');
     viewport.className = 'game-viewport';
     this.renderer = new Renderer(viewport);
+    this.atlas = createTextureAtlas('stonefield-preview-v1');
+    this.materials = {
+      opaque: new THREE.MeshLambertMaterial({ map: this.atlas.texture }),
+      cutout: new THREE.MeshLambertMaterial({ map: this.atlas.texture, alphaTest: 0.48 }),
+      translucent: new THREE.MeshLambertMaterial({
+        map: this.atlas.texture,
+        transparent: true,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      }),
+    };
+    this.previewChunk = new ChunkView(this.renderer.scene, this.materials);
+    this.renderer.scene.fog = new THREE.Fog('#9bb9bb', 28, 92);
+    this.renderer.scene.add(new THREE.HemisphereLight('#e5f0db', '#554d3b', 2.1));
+    const sun = new THREE.DirectionalLight('#fff0cb', 2.4);
+    sun.position.set(-18, 32, 12);
+    this.renderer.scene.add(sun);
+    this.renderer.camera.position.set(23, 13, 23);
+    this.renderer.camera.lookAt(8, 4, 8);
+    const chunk = meshChunk(createDemoWorld(), this.atlas.manifest);
+    for (const layer of ['opaque', 'cutout', 'translucent'] as const)
+      this.previewChunk.update(layer, chunk[layer]);
+    this.renderer.render();
 
     const panel = document.createElement('section');
     panel.className = 'welcome-panel';
@@ -76,6 +108,9 @@ export class GameApplication {
     this.renderer.canvas.removeEventListener('webglcontextlost', this.onContextLost);
     this.renderer.canvas.removeEventListener('webglcontextrestored', this.onContextRestored);
     this.enterButton.removeEventListener('click', this.enterWorld);
+    this.previewChunk.dispose();
+    for (const material of Object.values(this.materials)) material.dispose();
+    this.atlas.texture.dispose();
     this.renderer.dispose();
     this.shell.remove();
   }
