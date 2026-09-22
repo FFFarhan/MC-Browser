@@ -2,6 +2,7 @@ import { CHUNK_SIZE, CHUNK_VOLUME } from '../shared/coordinates';
 import { BLOCK_ID } from './defaultBlocks';
 import type { ChunkMeshSnapshot } from '../meshing/mesh-types';
 import { DEFAULT_BLOCK_DEFINITIONS } from './defaultBlocks';
+import type { CollisionWorld } from '../physics/PlayerCollision';
 
 function index(x: number, y: number, z: number): number {
   return y * 256 + z * CHUNK_SIZE + x;
@@ -43,5 +44,26 @@ export function createDemoWorld(): ChunkMeshSnapshot {
     revision: 1,
     definitions: DEFAULT_BLOCK_DEFINITIONS,
     neighbors: {},
+  };
+}
+
+export function createDemoCollisionWorld(snapshot = createDemoWorld()): CollisionWorld {
+  const definitions = new Map(
+    snapshot.definitions.map((definition) => [definition.id, definition]),
+  );
+  return {
+    collisionAt(worldX, worldY, worldZ) {
+      if (worldY < 0) return 'solid';
+      if (worldY >= 192) return 'empty';
+      const chunkX = Math.floor(worldX / CHUNK_SIZE);
+      const chunkZ = Math.floor(worldZ / CHUNK_SIZE);
+      if (chunkX !== snapshot.coord.x || chunkZ !== snapshot.coord.z) return 'unloaded';
+      const localX = worldX - chunkX * CHUNK_SIZE;
+      const localZ = worldZ - chunkZ * CHUNK_SIZE;
+      const id = snapshot.blocks[index(localX, worldY, localZ)] ?? 0;
+      const definition = definitions.get(id);
+      if (!definition) return 'solid';
+      return definition.collision === 'solid' ? 'solid' : 'empty';
+    },
   };
 }

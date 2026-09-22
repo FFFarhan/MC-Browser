@@ -41,10 +41,10 @@ export class OriginManager {
     if (
       !Number.isSafeInteger(position.chunkX) ||
       !Number.isSafeInteger(position.chunkZ) ||
-      !Number.isInteger(position.localX) ||
+      !Number.isFinite(position.localX) ||
       position.localX < 0 ||
       position.localX >= CHUNK_SIZE ||
-      !Number.isInteger(position.localZ) ||
+      !Number.isFinite(position.localZ) ||
       position.localZ < 0 ||
       position.localZ >= CHUNK_SIZE ||
       !Number.isFinite(position.y)

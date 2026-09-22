@@ -121,6 +121,39 @@ button {
   color: #d0d9cb;
   font-size: 0.86rem;
 }
+.controls-overlay {
+  position: absolute;
+  z-index: 1;
+  right: clamp(18px, 3vw, 44px);
+  bottom: 28px;
+  display: grid;
+  gap: 8px;
+  min-width: 156px;
+  padding: 14px 16px;
+  border: 1px solid rgb(230 235 218 / 24%);
+  background: rgb(25 38 31 / 78%);
+  color: #e8eddf;
+  font-size: 0.78rem;
+  backdrop-filter: blur(8px);
+}
+.controls-overlay div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.controls-overlay kbd {
+  min-width: 54px;
+  color: #d7d9b9;
+  font:
+    700 0.7rem ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+}
+.controls-overlay span {
+  color: #c4cebd;
+}
 .recovery-card {
   max-width: 640px;
   margin: min(12vh, 120px) auto;
@@ -145,6 +178,13 @@ button {
   }
   .welcome-panel h1 {
     font-size: clamp(3.6rem, 19vw, 5rem);
+  }
+  .controls-overlay {
+    right: 14px;
+    bottom: 14px;
+    min-width: 138px;
+    gap: 6px;
+    padding: 10px 12px;
   }
 }
 

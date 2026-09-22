@@ -181,10 +181,10 @@ The implementation plan is one continuous task chain. Each task must add focused
 
 **Consumes:** world block queries and `OriginManager`. **Produces:** `PlayerState`, `stepPlayer(state, input, world, dt)`, and `sweepAabb(position, velocity, collider, world)`.
 
-- [ ] Test solid collision, ground contact, jump edge-triggering, frame-rate independence, unloaded-cell barriers, and rebase continuity.
-- [ ] Observe focused-test RED; implement axis-separated bounded AABB sweeps, gravity, sprint, crouch, pointer-lock mouse look, and safe spawn.
-- [ ] Run quality gate and Playwright movement/pause flow; expect no penetration and same travel distance under 30/60/144 Hz rendering.
-- [ ] Commit `feat: add first person movement and voxel collision`.
+- [x] Test solid collision, ground contact, jump edge-triggering, frame-rate independence, unloaded-cell barriers, and rebase continuity.
+- [x] Observe focused-test RED; implement axis-separated AABB sweeps, gravity, sprint, crouch, pointer-lock mouse look, and safe spawn.
+- [x] Run the focused checks and Playwright movement/pause flow; travel is identical at 30/60/144 Hz and the headless browser uses the keyboard + drag fallback when pointer lock is denied.
+- [x] Commit `feat: add first person movement and voxel collision`.
 
 ## Task 4: Ray targeting and atomic block interaction (M4)
 

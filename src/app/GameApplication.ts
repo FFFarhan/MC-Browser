@@ -3,9 +3,14 @@ import { FixedStepLoop } from '../engine/FixedStepLoop';
 import { meshChunk } from '../meshing/faceMesher';
 import type { MeshLayer } from '../meshing/mesh-types';
 import { ChunkView } from '../rendering/ChunkView';
+import { OriginManager } from '../rendering/OriginManager';
 import { Renderer } from '../rendering/Renderer';
 import { createTextureAtlas } from '../rendering/TextureAtlas';
-import { createDemoWorld } from '../world/demoWorld';
+import { createDemoCollisionWorld, createDemoWorld } from '../world/demoWorld';
+import { findSafeSpawn } from '../physics/PlayerCollision';
+import { DEFAULT_PLAYER_COLLIDER } from '../player/PlayerState';
+import { PlayerController } from '../player/PlayerController';
+import { createControlsOverlay } from '../ui/ControlsOverlay';
 
 export class GameApplication {
   readonly renderer: Renderer;
@@ -16,6 +21,9 @@ export class GameApplication {
   private readonly atlas: ReturnType<typeof createTextureAtlas>;
   private readonly materials: Record<MeshLayer, THREE.Material>;
   private readonly previewChunk: ChunkView;
+  private readonly player: PlayerController;
+  private readonly controls: HTMLElement;
+  private sessionStarted = false;
   private disposed = false;
 
   constructor(private readonly root: HTMLElement) {
@@ -43,9 +51,27 @@ export class GameApplication {
     const sun = new THREE.DirectionalLight('#fff0cb', 2.4);
     sun.position.set(-18, 32, 12);
     this.renderer.scene.add(sun);
-    this.renderer.camera.position.set(23, 13, 23);
-    this.renderer.camera.lookAt(8, 4, 8);
-    const chunk = meshChunk(createDemoWorld(), this.atlas.manifest);
+    const chunkSnapshot = createDemoWorld();
+    const collisionWorld = createDemoCollisionWorld(chunkSnapshot);
+    this.renderer.camera.lookAt(8, 5, 8);
+    const spawn = findSafeSpawn(8, 14, 32, DEFAULT_PLAYER_COLLIDER, collisionWorld);
+    this.player = new PlayerController(
+      this.renderer.canvas,
+      this.renderer.camera,
+      collisionWorld,
+      {
+        position: spawn,
+        velocity: { x: 0, y: 0, z: 0 },
+        yaw: 0,
+        pitch: 0,
+        grounded: false,
+        crouching: false,
+        jumpWasDown: false,
+      },
+      this.pauseGame,
+      new OriginManager(4),
+    );
+    const chunk = meshChunk(chunkSnapshot, this.atlas.manifest);
     for (const layer of ['opaque', 'cutout', 'translucent'] as const)
       this.previewChunk.update(layer, chunk[layer]);
     this.renderer.render();
@@ -76,12 +102,17 @@ export class GameApplication {
     this.status.className = 'status-line';
     this.status.setAttribute('role', 'status');
     this.status.textContent = 'Game engine ready';
+    this.controls = createControlsOverlay();
 
     panel.append(eyebrow, title, description, this.enterButton, this.status);
-    this.shell.append(viewport, panel);
+    this.shell.append(viewport, panel, this.controls);
     this.root.replaceChildren(this.shell);
 
-    this.loop = new FixedStepLoop(() => this.renderer.render());
+    this.loop = new FixedStepLoop((dt) => {
+      this.player.update(dt);
+      this.updatePlayerStatus();
+      this.renderer.render();
+    });
     this.loop.start();
     document.addEventListener('visibilitychange', this.onVisibilityChange);
     document.addEventListener('pointerlockchange', this.onPointerLockChange);
@@ -108,6 +139,7 @@ export class GameApplication {
     this.renderer.canvas.removeEventListener('webglcontextlost', this.onContextLost);
     this.renderer.canvas.removeEventListener('webglcontextrestored', this.onContextRestored);
     this.enterButton.removeEventListener('click', this.enterWorld);
+    this.player.dispose();
     this.previewChunk.dispose();
     for (const material of Object.values(this.materials)) material.dispose();
     this.atlas.texture.dispose();
@@ -117,15 +149,20 @@ export class GameApplication {
 
   private readonly enterWorld = (): void => {
     try {
+      this.sessionStarted = true;
+      this.renderer.canvas.focus();
       const request = this.renderer.canvas.requestPointerLock();
       if (request instanceof Promise) {
         void request.catch(() => {
-          this.status.textContent =
-            'Mouse look is unavailable. You can still explore the viewport.';
+          this.player.activateFallbackControls();
+          this.resume();
+          this.status.textContent = 'Keyboard mode active. WASD moves; click and drag to look.';
         });
       }
     } catch {
-      this.status.textContent = 'Mouse look is unavailable. You can still explore the viewport.';
+      this.player.activateFallbackControls();
+      this.resume();
+      this.status.textContent = 'Keyboard mode active. WASD moves; click and drag to look.';
     }
   };
 
@@ -135,10 +172,32 @@ export class GameApplication {
   };
 
   private readonly onPointerLockChange = (): void => {
-    if (!document.pointerLockElement && !document.hidden && !this.disposed) {
-      this.status.textContent = 'Pointer released. Select Enter world to capture the mouse again.';
+    if (document.pointerLockElement === this.renderer.canvas) {
+      this.enterButton.textContent = 'Resume world';
+      this.status.textContent = 'Mouse captured. WASD to move, mouse to look.';
+      this.resume();
+    } else if (this.sessionStarted && !document.hidden && !this.disposed) {
+      this.pauseGame();
     }
   };
+
+  private readonly pauseGame = (): void => {
+    if (this.disposed) return;
+    this.player.deactivateControls();
+    this.pause();
+    this.enterButton.textContent = 'Resume world';
+    this.status.textContent = 'Paused. Select Resume world to continue.';
+  };
+
+  private lastStatusCell = '';
+
+  private updatePlayerStatus(): void {
+    const position = this.player.getState().position;
+    const cell = `${position.chunkX * 16 + Math.floor(position.localX)},${Math.floor(position.y)},${position.chunkZ * 16 + Math.floor(position.localZ)}`;
+    if (cell === this.lastStatusCell && this.status.textContent?.startsWith('Exploring')) return;
+    this.lastStatusCell = cell;
+    if (this.sessionStarted) this.status.textContent = `Exploring · ${cell}`;
+  }
 
   private readonly onContextLost = (event: Event): void => {
     event.preventDefault();

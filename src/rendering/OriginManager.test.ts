@@ -21,4 +21,15 @@ describe('OriginManager', () => {
     expect(origin.rebaseIfNeeded({ x: 8, z: 0 })).toBe(false);
     expect(origin.rebaseIfNeeded({ x: 9, z: 0 })).toBe(true);
   });
+
+  it('preserves fractional player coordinates across a rebase', () => {
+    const origin = new OriginManager(4);
+    const player = { chunkX: 20, chunkZ: -11, localX: 0.25, localZ: 15.75, y: 7.5 };
+    const before = origin.toRenderPosition(player);
+    expect(origin.rebaseIfNeeded({ x: player.chunkX, z: player.chunkZ })).toBe(true);
+    const after = origin.toRenderPosition(player);
+    expect(before.x).toBeCloseTo(player.chunkX * 16 + player.localX);
+    expect(before.z).toBeCloseTo(player.chunkZ * 16 + player.localZ);
+    expect(after).toEqual({ x: player.localX, y: player.y, z: player.localZ });
+  });
 });

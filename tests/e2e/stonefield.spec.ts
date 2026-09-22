@@ -13,3 +13,26 @@ test('production app shows the Stonefield welcome screen and WebGL viewport', as
   await expect(page.getByTestId('game-canvas')).toBeVisible();
   expect(pageErrors).toEqual([]);
 });
+
+test('first-person movement updates coordinates and Escape pauses before resume', async ({
+  page,
+}) => {
+  const pageErrors: string[] = [];
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Enter world' }).click();
+
+  const status = page.getByRole('status');
+  await expect(status).toContainText('Exploring');
+  const startingPosition = await status.textContent();
+  await page.keyboard.down('KeyW');
+  await expect(status).not.toHaveText(startingPosition ?? '', { timeout: 2_000 });
+  await page.keyboard.up('KeyW');
+  await expect(status).toContainText('Exploring');
+
+  await page.keyboard.press('Escape');
+  await expect(status).toContainText('Paused');
+  await page.getByRole('button', { name: 'Resume world' }).click();
+  await expect(status).toContainText('Exploring');
+  expect(pageErrors).toEqual([]);
+});
