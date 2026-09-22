@@ -65,21 +65,76 @@ tests/{unit,integration,e2e,benchmarks}/...
 Stable contracts introduced by their owning task:
 
 ```ts
-export interface ChunkCoord { readonly x: number; readonly z: number }
-export interface LocalCoord { readonly x: number; readonly y: number; readonly z: number }
-export function worldToChunk(x: number, z: number): { chunk: ChunkCoord; localX: number; localZ: number };
+export interface ChunkCoord {
+  readonly x: number;
+  readonly z: number;
+}
+export interface LocalCoord {
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+}
+export function worldToChunk(
+  x: number,
+  z: number,
+): { chunk: ChunkCoord; localX: number; localZ: number };
 export function chunkKey(coord: ChunkCoord): string;
 
-export interface ChunkData { readonly coord: ChunkCoord; readonly blocks: Uint16Array; readonly revision: number }
-export interface BlockDelta { readonly x: number; readonly y: number; readonly z: number; readonly before: number; readonly after: number }
-export interface InventoryDelta { readonly slot: number; readonly before: ItemStack | null; readonly after: ItemStack | null }
-export interface MutationBatch { readonly worldRevision: number; readonly blocks: readonly BlockDelta[]; readonly inventory: readonly InventoryDelta[] }
+export interface ChunkData {
+  readonly coord: ChunkCoord;
+  readonly blocks: Uint16Array;
+  readonly revision: number;
+}
+export interface BlockDelta {
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+  readonly before: number;
+  readonly after: number;
+}
+export interface InventoryDelta {
+  readonly slot: number;
+  readonly before: ItemStack | null;
+  readonly after: ItemStack | null;
+}
+export interface MutationBatch {
+  readonly worldRevision: number;
+  readonly blocks: readonly BlockDelta[];
+  readonly inventory: readonly InventoryDelta[];
+}
 
-export interface WorkerEnvelope<T> { readonly protocolVersion: 1; readonly jobId: number; readonly worldId: string; readonly chunkRevision: number; readonly generatorVersion: number; readonly payload: T }
-export interface MeshBuffers { readonly positions: Float32Array; readonly normals: Int8Array; readonly uvs: Float32Array; readonly indices: Uint16Array | Uint32Array; readonly light: Uint8Array }
+export interface WorkerEnvelope<T> {
+  readonly protocolVersion: 1;
+  readonly jobId: number;
+  readonly worldId: string;
+  readonly jobType: 'generate' | 'mesh';
+  readonly chunk: ChunkCoord;
+  readonly priority: number;
+  readonly worldRevision: number;
+  readonly chunkRevision: number;
+  readonly contentRevision: number;
+  readonly lightRevision: number;
+  readonly generatorVersion: number;
+  readonly payloadBytes: number;
+  readonly payload: T;
+}
+export interface MeshBuffers {
+  readonly positions: Float32Array;
+  readonly normals: Int8Array;
+  readonly uvs: Float32Array;
+  readonly indices: Uint16Array | Uint32Array;
+  readonly light: Uint8Array;
+}
 
-export interface SaveManifest { readonly schemaVersion: number; readonly committedGeneration: number; readonly checksum: string }
-export interface SaveCoordinator { requestSave(worldId: string): Promise<SaveResult>; flush(worldId: string): Promise<SaveResult> }
+export interface SaveManifest {
+  readonly schemaVersion: number;
+  readonly committedGeneration: number;
+  readonly checksum: string;
+}
+export interface SaveCoordinator {
+  requestSave(worldId: string): Promise<SaveResult>;
+  flush(worldId: string): Promise<SaveResult>;
+}
 ```
 
 The implementation plan is one continuous task chain. Each task must add focused tests first, observe expected RED, implement, run the whole suite and quality gate, then commit that task before moving on.
@@ -90,11 +145,11 @@ The implementation plan is one continuous task chain. Each task must add focused
 
 **Produces:** `startApplication(root: HTMLElement): Promise<GameApplication>`; `detectCapabilities(): CapabilityReport`; `FixedStepLoop` with `start`, `pause`, `resume`, `dispose`; npm scripts `dev`, `build`, `preview`, `format:check`, `lint`, `typecheck`, `test`, `test:e2e`, and `bench`.
 
-- [ ] Test missing required browser capability renders an accessible unsupported screen; test fixed-step loop caps five catch-up ticks and resets elapsed time on visibility resume.
-- [ ] Run `npm test -- src/platform/capabilities.test.ts src/engine/FixedStepLoop.test.ts`; expect RED because exports do not exist.
-- [ ] Implement the shell, central typed error boundary, feature detection, fixed-step clock, minimal Three.js scene, and production-safe test configuration.
-- [ ] Run all six quality commands from `MASTER_PROMPT.md`; expect all to pass. Run Playwright against production preview and verify no test hooks in built assets.
-- [ ] Commit `build: establish browser game foundation`.
+- [x] Test missing required browser capability renders an accessible unsupported screen; test fixed-step loop caps five catch-up ticks and resets elapsed time on visibility resume.
+- [x] Run `npm test -- src/platform/capabilities.test.ts src/engine/FixedStepLoop.test.ts`; observed expected RED because exports did not exist.
+- [x] Implement the shell, central typed error boundary, feature detection, fixed-step clock, minimal Three.js scene, and production-safe test configuration.
+- [x] Run all six quality commands from `MASTER_PROMPT.md`; all pass. Playwright passed against production preview and built assets contain no test hooks.
+- [x] Commit `build: establish browser game foundation`.
 
 ## Task 1: Coordinates, registries, chunk data, and floating origin (M1)
 

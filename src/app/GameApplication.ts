@@ -1,0 +1,118 @@
+import { FixedStepLoop } from '../engine/FixedStepLoop';
+import { Renderer } from '../rendering/Renderer';
+
+export class GameApplication {
+  readonly renderer: Renderer;
+  private readonly loop: FixedStepLoop;
+  private readonly shell: HTMLElement;
+  private readonly status: HTMLElement;
+  private readonly enterButton: HTMLButtonElement;
+  private disposed = false;
+
+  constructor(private readonly root: HTMLElement) {
+    this.shell = document.createElement('main');
+    this.shell.className = 'game-shell';
+    this.shell.dataset['state'] = 'ready';
+
+    const viewport = document.createElement('div');
+    viewport.className = 'game-viewport';
+    this.renderer = new Renderer(viewport);
+
+    const panel = document.createElement('section');
+    panel.className = 'welcome-panel';
+    panel.setAttribute('aria-labelledby', 'game-title');
+
+    const eyebrow = document.createElement('p');
+    eyebrow.className = 'eyebrow';
+    eyebrow.textContent = 'A world waiting to be shaped';
+
+    const title = document.createElement('h1');
+    title.id = 'game-title';
+    title.textContent = 'Stonefield';
+
+    const description = document.createElement('p');
+    description.className = 'welcome-copy';
+    description.textContent = 'Gather, build, and find your way through a quiet wild world.';
+
+    this.enterButton = document.createElement('button');
+    this.enterButton.type = 'button';
+    this.enterButton.className = 'primary-button';
+    this.enterButton.textContent = 'Enter world';
+    this.enterButton.addEventListener('click', this.enterWorld);
+
+    this.status = document.createElement('p');
+    this.status.className = 'status-line';
+    this.status.setAttribute('role', 'status');
+    this.status.textContent = 'Game engine ready';
+
+    panel.append(eyebrow, title, description, this.enterButton, this.status);
+    this.shell.append(viewport, panel);
+    this.root.replaceChildren(this.shell);
+
+    this.loop = new FixedStepLoop(() => this.renderer.render());
+    this.loop.start();
+    document.addEventListener('visibilitychange', this.onVisibilityChange);
+    document.addEventListener('pointerlockchange', this.onPointerLockChange);
+    this.renderer.canvas.addEventListener('webglcontextlost', this.onContextLost);
+    this.renderer.canvas.addEventListener('webglcontextrestored', this.onContextRestored);
+  }
+
+  pause(): void {
+    this.loop.pause();
+    if (document.pointerLockElement) document.exitPointerLock();
+  }
+
+  resume(): void {
+    this.loop.resume();
+  }
+
+  dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.pause();
+    this.loop.dispose();
+    document.removeEventListener('visibilitychange', this.onVisibilityChange);
+    document.removeEventListener('pointerlockchange', this.onPointerLockChange);
+    this.renderer.canvas.removeEventListener('webglcontextlost', this.onContextLost);
+    this.renderer.canvas.removeEventListener('webglcontextrestored', this.onContextRestored);
+    this.enterButton.removeEventListener('click', this.enterWorld);
+    this.renderer.dispose();
+    this.shell.remove();
+  }
+
+  private readonly enterWorld = (): void => {
+    try {
+      const request = this.renderer.canvas.requestPointerLock();
+      if (request instanceof Promise) {
+        void request.catch(() => {
+          this.status.textContent =
+            'Mouse look is unavailable. You can still explore the viewport.';
+        });
+      }
+    } catch {
+      this.status.textContent = 'Mouse look is unavailable. You can still explore the viewport.';
+    }
+  };
+
+  private readonly onVisibilityChange = (): void => {
+    if (document.hidden) this.pause();
+    else this.resume();
+  };
+
+  private readonly onPointerLockChange = (): void => {
+    if (!document.pointerLockElement && !document.hidden && !this.disposed) {
+      this.status.textContent = 'Pointer released. Select Enter world to capture the mouse again.';
+    }
+  };
+
+  private readonly onContextLost = (event: Event): void => {
+    event.preventDefault();
+    this.pause();
+    this.status.textContent = 'Graphics paused while the browser restores the display.';
+  };
+
+  private readonly onContextRestored = (): void => {
+    this.status.textContent = 'Graphics restored. Select Enter world to continue.';
+    this.renderer.render();
+  };
+}
