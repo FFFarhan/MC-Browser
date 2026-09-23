@@ -2,11 +2,11 @@
 
 ## Product goal
 
-Create a polished, original, desktop-first voxel survival game that launches quickly in a browser and supports a complete early-game loop: create a seeded world, explore, gather wood and stone, craft tools, mine ore, build, manage health and hunger, experience day and night, save, and return later.
+Create an original, desktop-first voxel survival game that launches in a browser and supports a playable early-game loop: create a seeded world, explore, mine and place blocks, craft/equip tools, manage basic health and hunger, experience day and night, and save/reopen named worlds. The current build is a working first pass, not a claim that every long-term system below is complete.
 
 ## Release audience
 
-The first release is for keyboard-and-mouse players on current stable desktop Chrome, Firefox, and Safari. It must run from a static host and must remain playable offline after its files have loaded.
+The target is keyboard-and-mouse desktop browsers. Single-player runs from static files and remains local to the browser. Optional online rooms require public HTTPS/WSS signaling and STUN/TURN configuration; see `MULTIPLAYER_HOSTING.md`. Hosting multiplayer does not require ChatGPT services.
 
 ## Controls
 
@@ -22,7 +22,7 @@ The first release is for keyboard-and-mouse players on current stable desktop Ch
 - 1–9 and mouse wheel: select hotbar slot
 - F3: diagnostics overlay
 
-All gameplay bindings are rebindable. Browser-reserved combinations may be rejected with an explanation.
+Controls use the listed keyboard and mouse bindings; rebinding is a future improvement.
 
 ## World content
 
@@ -39,7 +39,7 @@ All gameplay bindings are rebindable. Browser-reserved combinations may be rejec
 
 The player has first-person movement, an AABB collider, gravity, jumping, sprinting, crouching, swimming, fall damage, 20 health points, and 20 hunger points. Hunger drains through activity. Sufficient hunger permits slow regeneration; empty hunger causes bounded starvation damage that cannot reduce health below one point in the normal difficulty used for release one.
 
-On death, the player drops inventory items at the death location and respawns at the original safe spawn with full health and hunger. Dropped items expire after five loaded minutes. If the death area is not loaded, expiration time does not advance.
+The current survival pass tracks health, hunger, fall damage, and respawn. Death drops, persistent dropped-item timers, and a complete difficulty system are not implemented yet.
 
 ## Interaction
 
@@ -47,28 +47,27 @@ The player can target blocks within five blocks using voxel-grid ray traversal. 
 
 ## Inventory and crafting
 
-The inventory contains 27 storage slots and a nine-slot hotbar. It supports drag, swap, stack merge, half-stack split, single-item placement, shift transfer, number-key hotbar transfer, and tooltips. Every inventory transaction is atomic: items are neither duplicated nor lost.
+The current interactive inventory shows item icons and data-driven recipes, supports hotbar assignment, and includes early wood/stone/iron tool and weapon progression. Full stack-splitting gestures and every full-game inventory operation remain future work.
 
-Release-one crafting includes a 2×2 player grid and 3×3 crafting-station grid. Recipes are data-driven and support shaped and shapeless matching. A furnace converts raw iron to iron ingots using coal while its chunk is loaded. The progression includes wood, planks, sticks, a crafting station, wooden tools, stone tools, a furnace, and iron-grade tools.
+Recipes are data-driven and include the early wood/stone/iron tool and weapon progression. Station-gated 3×3 crafting and furnace smelting remain future work.
 
 ## Survival world systems
 
 - A 20-minute full day/night cycle
 - Sky, fog, ambient light, and sun direction derived from world time
-- Sunlight and block-emitted voxel light
-- Transparent water with bounded level-based spreading
-- Original procedural sound effects for movement and core interactions
-- Particles for block breaking, pickup, damage, and water entry
+- Basic daylight/sky changes and transparent glass
+- Hostile creatures are limited to night surface and valid caves
+- Full propagated block lighting, flowing water, and procedural audio are not implemented in this working build
 
 ## Menus
 
-The title screen supports creating, loading, exporting, importing, and deleting worlds. World creation accepts a name and optional seed. The pause menu offers resume, settings, save, return to title, and export. Deletion requires explicit confirmation naming the world.
+The world picker supports creating and opening named seeded worlds; **Save & New World** preserves the current world before opening a new-world form. Export/import and advanced settings are not included in the current working build.
 
 Settings include render distance, field of view, mouse sensitivity, graphics quality, master/effects/music volume, key bindings, and reduced motion.
 
 ## Save behavior
 
-Autosave occurs at least every 30 seconds when changes exist, on pause, and before returning to the title screen. A save includes world metadata, generator version, mutations, player state, inventory, world time, dropped items in persisted changed regions, and settings. Refreshing or closing during a save must not invalidate the last committed state.
+Each named world saves locally in browser storage, autosaves during play, and can be explicitly saved before creating another world. Saves contain the seed, player state, inventory/hotbar/equipment, clock, survival state, and block mutations; they are not uploaded to the signaling service. A failed write is reported instead of replacing a different world.
 
 ## Accessibility
 
@@ -79,6 +78,10 @@ Autosave occurs at least every 30 seconds when changes exist, on pause, and befo
 - Reduced motion disables camera bob and reduces nonessential particles.
 - Audio is optional and individually adjustable.
 
-## Explicit exclusions
+## Current multiplayer boundary
 
-Multiplayer, hostile or passive mobs, combat, weather, villages, automation circuits, dimensions, portals, enchanting, accounts, cloud saves, mobile controls, modding, and shader packs are not part of release one.
+The optional online mode is host-authoritative WebRTC for up to four participants total. The host browser owns simulation and saves; guests send validated action/pose requests. A self-hostable signaling service and TURN configuration are included, but must be deployed publicly before people on different networks can join reliably. There is no dedicated game server or host migration. Details and starting hardware estimates are in `MULTIPLAYER_HOSTING.md`.
+
+## Explicit exclusions for the current build
+
+More than four players, public matchmaking, accounts, voice/text chat, dedicated-server authority, host migration, cloud saves, complex creature AI, weather, villages, automation circuits, dimensions, portals, enchanting, mobile controls, modding, shader packs, and full-game production hardening are outside this working release.

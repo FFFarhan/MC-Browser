@@ -1,5 +1,7 @@
 # Performance Specification
 
+The target values below are aspirational release budgets, not measured guarantees for the current working build. Current interactive streaming is intentionally much smaller than the proposed full release. In the headless Playwright environment, software WebGL reported about 4 FPS while two pages rendered concurrently; that is a test-runner measurement, not a representative GPU benchmark for a player's computer.
+
 ## Targets
 
 On a representative current desktop or mid-range laptop:

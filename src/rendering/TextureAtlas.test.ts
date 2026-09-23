@@ -36,6 +36,31 @@ describe('procedural texture atlas', () => {
     }
   });
 
+  it('renders glass with mostly transparent fill and a bright visible frame', () => {
+    const { pixels, manifest } = createAtlasPixels(42, ['glass']);
+    const entry = manifest.entries['glass'];
+    if (!entry) throw new Error('glass atlas entry missing');
+    const x0 = Math.round(entry.u0 * manifest.width);
+    const y0 = Math.round((1 - entry.v1) * manifest.height);
+    const alphaValues: number[] = [];
+    let brightFramePixels = 0;
+    for (let y = 0; y < manifest.tileSize; y += 1) {
+      for (let x = 0; x < manifest.tileSize; x += 1) {
+        const offset = ((y0 + y) * manifest.width + x0 + x) * 4;
+        const alpha = pixels[offset + 3] ?? 0;
+        alphaValues.push(alpha);
+        if (alpha >= 150 && (x === 1 || x === 14 || y === 1 || y === 14)) {
+          const r = pixels[offset] ?? 0;
+          const g = pixels[offset + 1] ?? 0;
+          const b = pixels[offset + 2] ?? 0;
+          if (r + g + b > 500) brightFramePixels += 1;
+        }
+      }
+    }
+    expect(alphaValues.filter((alpha) => alpha <= 80).length).toBeGreaterThan(160);
+    expect(brightFramePixels).toBeGreaterThan(20);
+  });
+
   it('rejects duplicate or empty texture keys', () => {
     expect(() => createAtlasPixels(1, ['stone', 'stone'])).toThrow(RangeError);
     expect(() => createAtlasPixels(1, [''])).toThrow(RangeError);

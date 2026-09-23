@@ -6,8 +6,8 @@ These rules apply to every file and every milestone.
 
 - Build an original voxel survival game, not a branded Minecraft clone.
 - Target keyboard-and-mouse desktop browsers for the first release.
-- Keep the game fully client-side and deployable as static files.
-- Multiplayer and complex creatures are outside the first-release scope.
+- Keep single-player fully client-side and deployable as static files; online play may use the separately hosted signaling/TURN services documented in `docs/MULTIPLAYER_HOSTING.md`.
+- The approved small-room multiplayer and simple night/cave creatures are in scope; dedicated game servers, host migration, and complex creature AI are not.
 
 ## Always
 

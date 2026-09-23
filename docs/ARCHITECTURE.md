@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The project is a static, client-side TypeScript application that combines a deterministic voxel simulation with Three.js rendering. Game rules must remain usable without the renderer so that world generation, physics, inventory, crafting, lighting, and persistence can be tested deterministically.
+The project is a static, client-side TypeScript application that combines a deterministic voxel simulation with Three.js rendering. Optional invite-only multiplayer uses peer WebRTC and a separate small signaling process. Game rules remain testable without the renderer.
 
 ## Technology baseline
 
@@ -51,6 +51,12 @@ Workers perform deterministic terrain generation and chunk meshing. Inputs and o
 - **Transient state:** input edges, interpolation values, particles, sounds, selection, and in-flight jobs. It is safely discarded on reload.
 
 Communication across boundaries uses typed commands and events. UI emits domain commands; domain services return success or a typed rejection. Rendering observes committed domain state and never changes gameplay state directly.
+
+### Multiplayer authority boundary
+
+Single-player owns its world in the local browser. In a multiplayer room, the host browser remains the only world authority and save owner; the signaling process never stores world state. Guests send bounded pose/action requests. The host re-checks room/world identity, range, block and item IDs, inventory, and per-action timing before broadcasting revisioned state. Terrain is regenerated from the agreed seed/generator version on each client, with a bounded initial mutation snapshot.
+
+The WebSocket signaling service only creates expiring invite rooms, queues host approvals, relays SDP/ICE negotiation, and returns short-lived TURN credentials. It does not relay routine game messages unless TURN is selected/required, and it does not run simulation. A reliable ordered data channel carries room setup and world/inventory changes; a separately bounded low-latency channel carries player poses. The room cap is four participants total. Closing the host ends the room; authority migration and cloud saves are not implemented.
 
 ## Simulation timing
 
@@ -165,4 +171,6 @@ The lockfile is committed. CI uses deterministic clean installs, type checking, 
 
 ## Security and privacy
 
-The release has no accounts, analytics, network gameplay, or required remote services. Imported saves are untrusted data and must be size-limited, schema-validated, and rejected on invalid fields before IndexedDB writes.
+There are no accounts or analytics. Single-player needs no remote service; online rooms require the operator's HTTPS static host, WSS signaling, and configured STUN/TURN. Signaling, peer messages, and persistence inputs are bounded and schema-validated before use. TURN secrets remain server-side and TURN credentials are short-lived. Direct WebRTC may reveal network candidate information to room peers; relay-only deployments trade that exposure for bandwidth and latency. Local world saves are not sent to the signaling service.
+
+For the actual supported hosting split and current implementation limits, see `MULTIPLAYER_HOSTING.md`.

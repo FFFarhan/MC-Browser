@@ -73,4 +73,14 @@ describe('ChunkView', () => {
     ).toThrow(RangeError);
     view.dispose();
   });
+
+  it('positions each chunk mesh at its world-space horizontal offset', () => {
+    const view = new ChunkView(new THREE.Scene(), materials());
+    view.setChunkOffset(32, -16);
+    view.update('opaque', triangle());
+
+    expect(view.getMesh('opaque')?.position.x).toBe(32);
+    expect(view.getMesh('opaque')?.position.z).toBe(-16);
+    view.dispose();
+  });
 });

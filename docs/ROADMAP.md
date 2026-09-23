@@ -1,5 +1,9 @@
 # Milestone Roadmap
 
+## Current working build
+
+The approved playable slice now includes per-world local saves and Save & New, timed block-specific mining, icon-based interactive inventory and recipes, craftable/equipable tools and weapons, night/cave-only simple mobs, mouse-wheel hotbar selection, a real RAF FPS display, and optional four-player host-authoritative WebRTC rooms. Multiplayer has local two-browser coverage for invite approval and host-to-guest block-drop synchronization. Public internet connectivity still depends on deployment of HTTPS/WSS signaling and a TURN service. This working build deliberately does not claim the full production roadmap gates below (for example, complete lighting/water/audio systems, long soak, or service-worker release hardening).
+
 Every milestone ends with a runnable application, focused acceptance tests, the full quality gate, updated documentation, and a commit. Milestones are sequential unless this document explicitly states otherwise.
 
 ## M0 — Foundation
@@ -94,4 +98,4 @@ Add the bounded local diagnostic ring, diagnostic export, long-frame metrics, be
 
 ## Deferred roadmap
 
-After release one, independently specify and plan entities/mobs/combat, weather and structures, multiplayer/server authority, mobile controls, and mod support. None may be pulled into M0–M14 without revising the approved product specification.
+Future independent work: improve creature AI/animation, weather and structures, multiplayer beyond four players, persistent dedicated-server authority/host migration, mobile controls, and mod support. None is part of the current working slice.

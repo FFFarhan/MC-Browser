@@ -12,7 +12,9 @@ Integration tests cover worker protocols, chunk lifecycle, atomic mutation-to-re
 
 ### Browser tests
 
-Playwright covers startup, world creation, pointer-lock fallback, movement, mining, placement, inventory, crafting, pause, settings, save/reload, world export/import, and fatal-error recovery. Tests may use deterministic test hooks compiled only for test builds; they must exercise the same production systems.
+Playwright covers startup, world creation, pointer-lock fallback, movement, mining, placement, inventory, crafting, pause, save/reload, and fatal-error recovery. A two-context multiplayer test creates a room, submits a guest for host approval, negotiates WebRTC, and verifies a host-mined drop reaches the guest inventory. The local test does not prove public cross-network/TURN connectivity; that requires deployed endpoints and two external networks.
+
+The standalone signaling service has integration coverage for uppercase/lowercase invite codes, room approval/capacity/expiry, strict message validation, browser-native SDP/ICE forwarding, rate limiting, origin policy, cleanup, health, and temporary TURN credentials. Run it with `npm run signal:test`.
 
 ## Required edge cases
 
@@ -36,6 +38,8 @@ Playwright covers startup, world creation, pointer-lock fallback, movement, mini
 - Service-worker upgrade with an obsolete cache and offline application reload
 - Storage quota exhaustion, transaction abort, and private-mode storage failure
 - Malformed worker payload lengths and transferred-buffer ownership mistakes
+- Uppercase invite codes and the browser-native nested `RTCIceCandidateInit` payload
+- WebRTC host approval and revisioned block/inventory deltas across two isolated browser contexts
 
 ## Test discipline
 

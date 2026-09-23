@@ -36,6 +36,8 @@ export interface PlayerInput {
   readonly jump: boolean;
   readonly sprint: boolean;
   readonly crouch: boolean;
+  readonly flying?: boolean;
+  readonly flyDown?: boolean;
   readonly lookX: number;
   readonly lookY: number;
 }
@@ -66,7 +68,9 @@ export function stepPlayer(
   validatePosition(state.position);
   if (![input.lookX, input.lookY].every(Number.isFinite))
     throw new RangeError('Look input must be finite');
-  const yaw = normalizeAngle(state.yaw + input.lookX);
+  // lookX is positive when the pointer moves right; Three.js camera yaw turns
+  // toward +X as yaw becomes negative from its default -Z heading.
+  const yaw = normalizeAngle(state.yaw - input.lookX);
   const pitch = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, state.pitch - input.lookY));
 
   let crouching = input.crouch || state.crouching;
@@ -91,11 +95,12 @@ export function stepPlayer(
   const length = Math.hypot(forwardInput, strafeInput);
   const normalizedForward = length > 0 ? forwardInput / length : 0;
   const normalizedStrafe = length > 0 ? strafeInput / length : 0;
-  const targetSpeed = crouching ? 1.6 : input.sprint ? 7 : 4.6;
+  const flying = input.flying === true;
+  const targetSpeed = flying ? (crouching ? 5 : 7) : crouching ? 1.6 : input.sprint ? 7 : 4.6;
   const desiredX =
     (normalizedStrafe * Math.cos(yaw) - normalizedForward * Math.sin(yaw)) * targetSpeed;
   const desiredZ =
-    (normalizedStrafe * Math.sin(yaw) - normalizedForward * Math.cos(yaw)) * targetSpeed;
+    (-normalizedStrafe * Math.sin(yaw) - normalizedForward * Math.cos(yaw)) * targetSpeed;
   const acceleration = state.grounded ? 28 : 8;
   const friction = state.grounded ? 32 : 1.5;
   const vx = approach(
@@ -108,8 +113,10 @@ export function stepPlayer(
     length > 0 ? desiredZ : 0,
     (length > 0 ? acceleration : friction) * dt,
   );
-  let vy = Math.max(TERMINAL_VELOCITY, state.velocity.y - GRAVITY * dt);
-  if (input.jump && !state.jumpWasDown && state.grounded) vy = JUMP_SPEED;
+  let vy = flying
+    ? (Number(input.jump) - Number(input.flyDown === true)) * 8
+    : Math.max(TERMINAL_VELOCITY, state.velocity.y - GRAVITY * dt);
+  if (!flying && input.jump && !state.jumpWasDown && state.grounded) vy = JUMP_SPEED;
 
   const horizontal = sweepAabb(
     state.position,

@@ -36,6 +36,21 @@ export const DEFAULT_TEXTURE_KEYS = [
   'torch',
   'tall_grass',
   'bedrock',
+  'stick',
+  'wooden_pickaxe',
+  'wooden_axe',
+  'wooden_shovel',
+  'wooden_sword',
+  'stone_pickaxe',
+  'stone_axe',
+  'stone_shovel',
+  'stone_sword',
+  'iron_ingot',
+  'iron_pickaxe',
+  'iron_axe',
+  'iron_shovel',
+  'iron_sword',
+  'berries',
 ] as const;
 
 export interface AtlasEntry {
@@ -109,11 +124,123 @@ const PALETTES: Record<string, readonly string[]> = {
   bedrock: ['#393f40', '#535958', '#282f32', '#666b65'],
   torch: ['#b7864b', '#d3a95d', '#98683d', '#efd178'],
   tall_grass: ['#608f45', '#78a94f', '#45743e', '#91b95b'],
+  stick: ['#755131', '#a27643', '#563c29', '#bf8b4e'],
+  wooden_pickaxe: ['#93673a', '#b08248', '#60432d', '#d0a062'],
+  wooden_axe: ['#93673a', '#b08248', '#60432d', '#d0a062'],
+  wooden_shovel: ['#93673a', '#b08248', '#60432d', '#d0a062'],
+  stone_pickaxe: ['#777d79', '#a3a6a0', '#535b5a', '#c6c6b9'],
+  stone_axe: ['#777d79', '#a3a6a0', '#535b5a', '#c6c6b9'],
+  stone_shovel: ['#777d79', '#a3a6a0', '#535b5a', '#c6c6b9'],
+  iron_ingot: ['#a4aaa5', '#d0d5cf', '#747d7b', '#e3e5dc'],
+  iron_pickaxe: ['#a4aaa5', '#d0d5cf', '#747d7b', '#e3e5dc'],
+  iron_axe: ['#a4aaa5', '#d0d5cf', '#747d7b', '#e3e5dc'],
+  iron_shovel: ['#a4aaa5', '#d0d5cf', '#747d7b', '#e3e5dc'],
+  wooden_sword: ['#93673a', '#b08248', '#60432d', '#d0a062'],
+  stone_sword: ['#777d79', '#a3a6a0', '#535b5a', '#c6c6b9'],
+  iron_sword: ['#a4aaa5', '#d0d5cf', '#747d7b', '#e3e5dc'],
+  berries: ['#a6464b', '#d16c65', '#702d39', '#e9a26f'],
 };
 
 function hexColor(hex: string): [number, number, number] {
   const value = Number.parseInt(hex.slice(1), 16);
   return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+}
+
+type PixelPainter = (x: number, y: number, color: readonly number[], alpha?: number) => void;
+
+function paintItemSymbol(
+  key: string,
+  pixel: PixelPainter,
+  colors: readonly (readonly number[])[],
+): boolean {
+  const dark = colors[2] ?? [70, 58, 46];
+  const mid = colors[0] ?? [128, 106, 76];
+  const light = colors[1] ?? [176, 145, 103];
+  const highlight = colors[3] ?? light;
+  if (key === 'stick') {
+    for (let step = 0; step < 11; step += 1) {
+      pixel(3 + step, 4 + step, dark);
+      pixel(4 + step, 4 + step, light);
+      if (step < 7) pixel(10 + step, 2 + step, mid);
+    }
+    return true;
+  }
+  if (key === 'iron_ingot') {
+    for (let y = 6; y <= 11; y += 1) {
+      for (let x = 3 + Math.max(0, 5 - y); x <= 12 - Math.max(0, y - 9); x += 1) {
+        const edge = y === 6 || y === 11 || x === 3 || x === 12;
+        pixel(x, y, edge ? dark : y === 7 || x < 6 ? highlight : mid);
+      }
+    }
+    pixel(5, 7, highlight);
+    pixel(6, 7, highlight);
+    return true;
+  }
+  if (key === 'berries') {
+    for (let x = 4; x <= 11; x += 1) pixel(x, 5, hexColor(x % 2 ? '#436b3d' : '#6c9650'));
+    const berry = hexColor('#bd4f58');
+    const berryDark = hexColor('#702d39');
+    const berryPositions = [
+      [6, 8],
+      [9, 8],
+      [7, 11],
+      [10, 11],
+    ] as const;
+    for (const [centerX, centerY] of berryPositions) {
+      pixel(centerX, centerY, berryDark);
+      pixel(centerX + 1, centerY, berry);
+      pixel(centerX, centerY + 1, berry);
+      pixel(centerX + 1, centerY + 1, highlight);
+    }
+    pixel(6, 6, light);
+    pixel(10, 6, light);
+    return true;
+  }
+  if (/^(wooden|stone|iron)_sword$/.test(key)) {
+    const edge = key.startsWith('iron_') ? hexColor('#59666a') : dark;
+    for (let step = 0; step < 8; step += 1) {
+      pixel(3 + step, 2 + step, edge);
+      pixel(4 + step, 2 + step, highlight);
+      pixel(3 + step, 3 + step, mid);
+    }
+    for (let offset = -2; offset <= 2; offset += 1) {
+      pixel(9 + offset, 9 - offset, dark);
+      pixel(9 + offset, 10 - offset, light);
+    }
+    pixel(10, 11, dark);
+    pixel(11, 12, light);
+    pixel(12, 13, dark);
+    return true;
+  }
+  if (/^(wooden|stone|iron)_(pickaxe|axe|shovel)$/.test(key)) {
+    const handle = key.startsWith('wooden_') ? hexColor('#69472d') : hexColor('#79563a');
+    for (let step = 0; step < 9; step += 1) {
+      const x = 12 - step;
+      const y = 6 + step;
+      pixel(x, y, handle);
+      pixel(x + 1, y, key.startsWith('wooden_') ? light : mid);
+    }
+    if (key.endsWith('_pickaxe')) {
+      for (let x = 3; x <= 12; x += 1) pixel(x, 4, x === 3 || x === 12 ? dark : light);
+      for (let x = 5; x <= 10; x += 1) pixel(x, 3, mid);
+      pixel(4, 5, dark);
+      pixel(11, 5, dark);
+    } else if (key.endsWith('_axe')) {
+      for (let y = 3; y <= 8; y += 1) {
+        const end = y < 6 ? 7 : 9 - (y - 6);
+        for (let x = 3; x <= end; x += 1) pixel(x, y, x === 3 || y === 3 ? dark : highlight);
+      }
+      pixel(8, 6, dark);
+    } else {
+      for (let y = 3; y <= 7; y += 1) {
+        const width = y < 6 ? 3 : 4;
+        for (let x = 8 - width; x <= 8 + width; x += 1)
+          pixel(x, y, y === 3 || x === 8 - width ? dark : highlight);
+      }
+    }
+    return true;
+  }
+  return false;
 }
 
 function paintTile(
@@ -136,6 +263,7 @@ function paintTile(
     pixels[offset + 2] = color[2] ?? 0;
     pixels[offset + 3] = alpha;
   };
+  if (paintItemSymbol(key, pixel, colors)) return;
   for (let y = 0; y < TILE_SIZE; y += 1) {
     for (let x = 0; x < TILE_SIZE; x += 1) {
       let color = colors[Math.floor(rng() * colors.length)] ?? [128, 128, 128];
@@ -157,8 +285,11 @@ function paintTile(
       ) {
         color = colors[2] ?? color;
       }
-      if (key === 'oak_leaves' && rng() < 0.2) pixel(x, y, color, 0);
-      else if (key === 'glass' && (x === y || x + y === 15)) pixel(x, y, colors[1] ?? color, 190);
+      if (key === 'glass') {
+        if (x === 1 || x === 14 || y === 1 || y === 14) pixel(x, y, colors[1] ?? color, 210);
+        else if (x === y || x + y === 15) pixel(x, y, colors[1] ?? color, 125);
+        else pixel(x, y, color, 32);
+      } else if (key === 'oak_leaves' && rng() < 0.2) pixel(x, y, color, 0);
       else if (key.startsWith('water_'))
         pixel(x, y, colors[(Math.floor(rng() * 2) + waterFrame) % colors.length] ?? color, 180);
       else pixel(x, y, color);
@@ -277,6 +408,7 @@ function copyPixel(
 export function createTextureAtlas(seed: number | string): {
   texture: THREE.CanvasTexture;
   manifest: AtlasManifest;
+  icons: Readonly<Record<string, string>>;
 } {
   const atlas = createAtlasPixels(seed);
   const canvas = document.createElement('canvas');
@@ -287,11 +419,32 @@ export function createTextureAtlas(seed: number | string): {
   const image = context.createImageData(canvas.width, canvas.height);
   image.data.set(atlas.pixels);
   context.putImageData(image, 0, 0);
+  const icons: Record<string, string> = {};
+  for (const entry of Object.values(atlas.manifest.entries)) {
+    const icon = document.createElement('canvas');
+    icon.width = atlas.manifest.tileSize;
+    icon.height = atlas.manifest.tileSize;
+    const iconContext = icon.getContext('2d');
+    if (!iconContext) continue;
+    iconContext.imageSmoothingEnabled = false;
+    iconContext.drawImage(
+      canvas,
+      Math.round(entry.u0 * canvas.width),
+      Math.round((1 - entry.v1) * canvas.height),
+      atlas.manifest.tileSize,
+      atlas.manifest.tileSize,
+      0,
+      0,
+      atlas.manifest.tileSize,
+      atlas.manifest.tileSize,
+    );
+    icons[entry.key] = icon.toDataURL('image/png');
+  }
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.magFilter = THREE.NearestFilter;
   texture.minFilter = THREE.NearestFilter;
   texture.generateMipmaps = false;
   texture.needsUpdate = true;
-  return { texture, manifest: atlas.manifest };
+  return { texture, manifest: atlas.manifest, icons: Object.freeze(icons) };
 }

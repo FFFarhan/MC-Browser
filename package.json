@@ -10,6 +10,9 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
+    "signal:build": "npm --prefix server/signaling run build",
+    "signal:start": "npm --prefix server/signaling start",
+    "signal:test": "npm --prefix server/signaling test",
     "format:check": "prettier --check .",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
@@ -18,7 +21,8 @@
     "bench": "vitest bench tests/benchmarks"
   },
   "dependencies": {
-    "three": "0.186.0"
+    "three": "0.186.0",
+    "ws": "8.21.3"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

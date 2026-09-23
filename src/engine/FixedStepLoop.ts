@@ -22,6 +22,7 @@ export class FixedStepLoop {
   private lastTimestamp: number | null = null;
   private accumulatorMs = 0;
   private frameHandle: number | null = null;
+  private frameObserver: (timestampMs: number) => void = () => undefined;
 
   constructor(
     private readonly tick: (stepSeconds: number) => void,
@@ -42,6 +43,11 @@ export class FixedStepLoop {
 
   start(): void {
     this.resume();
+  }
+
+  setFrameObserver(observer: (timestampMs: number) => void): void {
+    if (this.disposed) throw new Error('Cannot observe frames after the loop is disposed');
+    this.frameObserver = observer;
   }
 
   pause(): void {
@@ -82,6 +88,7 @@ export class FixedStepLoop {
     if (!this.running || this.disposed) return;
 
     this.metrics.frameCount += 1;
+    this.frameObserver(timestamp);
     if (this.lastTimestamp === null) {
       this.lastTimestamp = timestamp;
     } else {

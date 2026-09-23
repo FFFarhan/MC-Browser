@@ -45,11 +45,41 @@ const rows: readonly [
 
 export const DEFAULT_BLOCK_DEFINITIONS: readonly BlockDefinition[] = Object.freeze(
   rows.map(
-    (
-      [name, displayName, layer = 'opaque', texture, tool = null, tier = 'hand', hardness = 1],
-      id,
-    ) => {
+    ([name, displayName, layer = 'opaque', texture, tool = null, tier = 'hand', hardness], id) => {
       const tile = texture ?? name;
+      const hardnessSeconds =
+        hardness ??
+        (
+          {
+            air: 0,
+            grass: 0.32,
+            dirt: 0.45,
+            stone: 1.65,
+            sand: 0.34,
+            sandstone: 1.15,
+            snow: 0.2,
+            ice: 0.72,
+            water: 0,
+            oak_log: 1.05,
+            oak_leaves: 0.18,
+            oak_planks: 0.78,
+            crafting_station: 0.92,
+            furnace: 1.45,
+            coal_ore: 1.85,
+            iron_ore: 2.25,
+            coal_block: 2.6,
+            iron_block: 3.25,
+            cobblestone: 1.72,
+            glass: 0.25,
+            brick: 1.35,
+            clay: 0.5,
+            gravel: 0.38,
+            torch: 0.08,
+            tall_grass: 0,
+            bedrock: 0,
+          } as Record<string, number>
+        )[name] ??
+        1;
       const textures =
         name === 'grass'
           ? { top: 'grass_top', bottom: 'dirt', side: 'grass_side' }
@@ -72,7 +102,7 @@ export const DEFAULT_BLOCK_DEFINITIONS: readonly BlockDefinition[] = Object.free
               ? 'liquid'
               : 'solid',
         replaceable: ['air', 'water', 'tall_grass'].includes(name),
-        hardnessSeconds: name === 'air' || name === 'water' || name === 'tall_grass' ? 0 : hardness,
+        hardnessSeconds,
         requiredTool: tool,
         minimumToolTier: tier,
         emittedLight: name === 'torch' ? 14 : 0,

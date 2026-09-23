@@ -4,6 +4,8 @@ import type { MeshBuffers, MeshLayer } from '../meshing/mesh-types';
 export class ChunkView {
   private readonly meshes = new Map<MeshLayer, THREE.Mesh<THREE.BufferGeometry, THREE.Material>>();
   private disposed = false;
+  private offsetX = 0;
+  private offsetZ = 0;
 
   constructor(
     private readonly scene: THREE.Scene,
@@ -12,6 +14,15 @@ export class ChunkView {
 
   getMesh(layer: MeshLayer): THREE.Mesh<THREE.BufferGeometry, THREE.Material> | null {
     return this.meshes.get(layer) ?? null;
+  }
+
+  setChunkOffset(x: number, z: number): void {
+    if (!Number.isFinite(x) || !Number.isFinite(z)) {
+      throw new RangeError('Chunk render offsets must be finite');
+    }
+    this.offsetX = x;
+    this.offsetZ = z;
+    for (const mesh of this.meshes.values()) mesh.position.set(x, 0, z);
   }
 
   update(layer: MeshLayer, buffers: MeshBuffers): void {
@@ -38,6 +49,7 @@ export class ChunkView {
       previous.geometry.dispose();
     }
     const mesh = new THREE.Mesh(geometry, this.materials[layer]);
+    mesh.position.set(this.offsetX, 0, this.offsetZ);
     mesh.frustumCulled = true;
     mesh.name = `chunk-layer-${layer}`;
     this.meshes.set(layer, mesh);

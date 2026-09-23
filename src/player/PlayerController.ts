@@ -1,7 +1,8 @@
 import type * as THREE from 'three';
 import { OriginManager } from '../rendering/OriginManager';
 import type { CollisionWorld } from '../physics/PlayerCollision';
-import { stepPlayer, type PlayerInput, type PlayerState } from './PlayerState';
+import { createPlayerState, stepPlayer, type PlayerInput, type PlayerState } from './PlayerState';
+import type { PlayerPosition } from '../physics/PlayerCollision';
 
 const MOUSE_RADIANS_PER_PIXEL = 0.0022;
 const MAX_MOUSE_DELTA_PER_TICK = 1_000;
@@ -11,6 +12,11 @@ export class PlayerController {
   private readonly keys = new Set<string>();
   private pointerLocked = false;
   private controlsActive = false;
+  private controlsSuspended = false;
+  private creativeMode = false;
+  private flying = false;
+  private lastJumpPressedAt = Number.NEGATIVE_INFINITY;
+  private ignoreNextUnlockPause = false;
   private mouseX = 0;
   private mouseY = 0;
   private disposed = false;
@@ -41,14 +47,65 @@ export class PlayerController {
     return this.state;
   }
 
+  get isFlying(): boolean {
+    return this.flying;
+  }
+
+  setCreativeMode(enabled: boolean): void {
+    if (this.creativeMode === enabled) return;
+    this.creativeMode = enabled;
+    this.lastJumpPressedAt = Number.NEGATIVE_INFINITY;
+    if (!enabled && this.flying) {
+      this.flying = false;
+      this.keys.delete('Space');
+      this.state = {
+        ...this.state,
+        velocity: { ...this.state.velocity, y: 0 },
+        jumpWasDown: false,
+      };
+      this.applyCamera();
+    }
+  }
+
+  respawn(position: PlayerPosition, yaw = 0, pitch = -0.5): void {
+    if (!Number.isFinite(pitch)) throw new RangeError('Respawn pitch must be finite');
+    this.state = { ...createPlayerState(position, yaw), pitch };
+    this.origin.rebaseIfNeeded({ x: position.chunkX, z: position.chunkZ });
+    this.activateFallbackControls();
+    this.applyCamera();
+  }
+
   activateFallbackControls(): void {
-    if (this.disposed) return;
+    if (this.disposed || this.controlsSuspended) return;
     this.controlsActive = true;
     this.canvas.focus();
   }
 
-  deactivateControls(): void {
+  suspendControlsForUi(): void {
+    if (this.disposed) return;
+    this.controlsSuspended = true;
     this.controlsActive = false;
+    this.keys.clear();
+    this.mouseX = 0;
+    this.mouseY = 0;
+    if (document.pointerLockElement === this.canvas) {
+      this.ignoreNextUnlockPause = true;
+      document.exitPointerLock?.();
+    } else {
+      this.pointerLocked = false;
+    }
+  }
+
+  resumeControlsFromUi(): void {
+    if (this.disposed) return;
+    this.controlsSuspended = false;
+    this.controlsActive = this.pointerLocked;
+  }
+
+  deactivateControls(): void {
+    this.controlsSuspended = false;
+    this.controlsActive = false;
+    this.pointerLocked = false;
     this.keys.clear();
     this.mouseX = 0;
     this.mouseY = 0;
@@ -70,8 +127,10 @@ export class PlayerController {
       left: this.keys.has('KeyA'),
       right: this.keys.has('KeyD'),
       jump: this.keys.has('Space'),
-      sprint: this.keys.has('ShiftLeft') || this.keys.has('ShiftRight'),
+      sprint: !this.flying && (this.keys.has('ShiftLeft') || this.keys.has('ShiftRight')),
       crouch: this.keys.has('KeyC'),
+      flying: this.flying,
+      flyDown: this.keys.has('ShiftLeft') || this.keys.has('ShiftRight'),
       lookX,
       lookY,
     };
@@ -117,6 +176,21 @@ export class PlayerController {
     ) {
       event.preventDefault();
     }
+    if (event.code === 'Space' && !event.repeat && this.creativeMode) {
+      const now = performance.now();
+      if (now - this.lastJumpPressedAt <= 350) {
+        this.flying = !this.flying;
+        this.lastJumpPressedAt = Number.NEGATIVE_INFINITY;
+        if (!this.flying)
+          this.state = {
+            ...this.state,
+            velocity: { ...this.state.velocity, y: 0 },
+            jumpWasDown: true,
+          };
+      } else {
+        this.lastJumpPressedAt = now;
+      }
+    }
     this.keys.add(event.code);
   };
 
@@ -125,6 +199,7 @@ export class PlayerController {
   };
 
   private readonly onMouseMove = (event: MouseEvent): void => {
+    if (!this.controlsActive) return;
     if (this.pointerLocked) {
       this.mouseX += event.movementX;
       this.mouseY += event.movementY;
@@ -137,12 +212,15 @@ export class PlayerController {
   private readonly onPointerLockChange = (): void => {
     const wasLocked = this.pointerLocked;
     this.pointerLocked = document.pointerLockElement === this.canvas;
-    this.controlsActive = this.pointerLocked;
+    this.controlsActive = this.pointerLocked && !this.controlsSuspended;
     if (!this.pointerLocked) {
       this.keys.clear();
       this.mouseX = 0;
       this.mouseY = 0;
-      if (wasLocked) this.onPause();
+      if (wasLocked) {
+        if (this.ignoreNextUnlockPause) this.ignoreNextUnlockPause = false;
+        else this.onPause();
+      }
     }
   };
 }

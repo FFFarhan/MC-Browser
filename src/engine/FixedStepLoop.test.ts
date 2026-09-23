@@ -72,4 +72,26 @@ describe('FixedStepLoop', () => {
       window.cancelAnimationFrame = originalCancel;
     }
   });
+
+  it('reports each actual animation frame independently of fixed simulation ticks', () => {
+    const frames = new Map<number, FrameRequestCallback>();
+    let nextId = 1;
+    const requestFrame = (callback: FrameRequestCallback) => {
+      const id = nextId++;
+      frames.set(id, callback);
+      return id;
+    };
+    const cancelFrame = (id: number) => frames.delete(id);
+    const loop = new FixedStepLoop(() => undefined, requestFrame, cancelFrame);
+    const observeFrame = vi.fn();
+    loop.setFrameObserver(observeFrame);
+
+    loop.start();
+    frames.get(1)?.(0);
+    frames.get(2)?.(8);
+    frames.get(3)?.(16);
+    expect(observeFrame.mock.calls.map(([timestamp]) => timestamp)).toEqual([0, 8, 16]);
+    expect(loop.metrics.tickCount).toBe(0);
+    loop.dispose();
+  });
 });

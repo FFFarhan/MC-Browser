@@ -26,6 +26,35 @@ const initial: PlayerState = {
 };
 
 describe('fixed-step player state', () => {
+  it('uses rightward-positive mouse yaw and camera-relative A/D at cardinal headings', () => {
+    const turned = stepPlayer(
+      initial,
+      { ...emptyInput, lookX: 0.25, lookY: 0.2 },
+      flatWorld,
+      1 / 60,
+    );
+    expect(turned.yaw).toBeLessThan(0);
+    expect(turned.pitch).toBeCloseTo(-0.2);
+
+    for (const yaw of [0, Math.PI / 2, -Math.PI / 2]) {
+      const right = stepPlayer(
+        { ...initial, yaw },
+        { ...emptyInput, right: true },
+        flatWorld,
+        0.05,
+      );
+      const left = stepPlayer({ ...initial, yaw }, { ...emptyInput, left: true }, flatWorld, 0.05);
+      const rightExpected = { x: Math.cos(yaw), z: -Math.sin(yaw) };
+      const rightLength = Math.hypot(right.velocity.x, right.velocity.z);
+      const leftLength = Math.hypot(left.velocity.x, left.velocity.z);
+
+      expect(right.velocity.x / rightLength).toBeCloseTo(rightExpected.x, 5);
+      expect(right.velocity.z / rightLength).toBeCloseTo(rightExpected.z, 5);
+      expect(left.velocity.x / leftLength).toBeCloseTo(-rightExpected.x, 5);
+      expect(left.velocity.z / leftLength).toBeCloseTo(-rightExpected.z, 5);
+    }
+  });
+
   it('lands on the floor and edge-triggers jump only once while held', () => {
     const airborne = stepPlayer(initial, { ...emptyInput, jump: true }, flatWorld, 1 / 60);
     expect(airborne.velocity.y).toBeGreaterThan(0);
@@ -43,6 +72,26 @@ describe('fixed-step player state', () => {
     expect(falling.position.y).toBeCloseTo(1, 3);
     expect(falling.grounded).toBe(true);
     expect(falling.velocity.y).toBe(0);
+  });
+
+  it('ascends, hovers, and descends while creative flight is enabled', () => {
+    const airborne: PlayerState = {
+      ...initial,
+      position: { ...initial.position, y: 5 },
+      velocity: { x: 0, y: 0, z: 0 },
+      grounded: false,
+      jumpWasDown: true,
+    };
+    const ascendInput = Object.assign({}, emptyInput, { jump: true, flying: true });
+    const hoverInput = Object.assign({}, emptyInput, { flying: true });
+    const descendInput = Object.assign({}, emptyInput, { flying: true, flyDown: true });
+    const ascend = stepPlayer(airborne, ascendInput, flatWorld, 0.05);
+    const hover = stepPlayer(airborne, hoverInput, flatWorld, 0.05);
+    const descend = stepPlayer(airborne, descendInput, flatWorld, 0.05);
+
+    expect(ascend.position.y).toBeGreaterThan(5);
+    expect(hover.position.y).toBe(5);
+    expect(descend.position.y).toBeLessThan(5);
   });
 
   it('produces identical fixed-tick travel at 30, 60, and 144 rendered frames per second', () => {
