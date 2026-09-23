@@ -10,6 +10,12 @@ Single-player is still static and local. Online play needs an HTTPS game site, a
 
 ## Free hosting options
 
+### Single-player only: GitHub Pages
+
+The game can be published as a static site without requiring players to clone the repository or install Node.js. The repository's Pages workflow builds the client and publishes it when changes are pushed to `browser-voxel-build`. After the first successful deployment, share the Pages URL shown in the workflow's `github-pages` environment; players open that link and choose single-player in their browser. Worlds remain saved in each player's own browser. The signaling service is not required for this mode.
+
+The site is configured for the repository URL path (`/MC-Browser/`). For a copied fork, the workflow automatically uses that fork's repository name when constructing Vite's asset base path.
+
 There is no free setup that can promise zero lag, uninterrupted uptime, or successful WebRTC traversal on every network. The host's browser still simulates the world; a relay can add latency and consumes bandwidth.
 
 - **Good first try:** Cloudflare Pages for the static site plus the included Render Blueprint (`render.yaml`) for signaling. Pages serves the built client globally and its current Free limits are 20,000 files and 25 MiB per file ([Pages limits](https://developers.cloudflare.com/pages/platform/limits/)). Render accepts WSS and the app keepalive helps its free service remain awake while the host is playing. However, Render's Free service sleeps after 15 minutes without inbound HTTP/WebSocket messages, takes about a minute to wake, has 750 included instance-hours per month, and may restart; an idle/suspended host can lose its in-memory room ([Render Free limits](https://render.com/docs/free), [Render WebSockets](https://render.com/docs/websocket)). Treat this as hobby/testing hosting, not an uptime guarantee.
